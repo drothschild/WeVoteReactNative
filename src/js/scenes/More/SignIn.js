@@ -194,7 +194,7 @@ export default class SignIn extends Component {
                   null :
                   <View>
                     <TwitterSignIn signIn />
-                    // signOut, may just be temporary for testing -- Sept 2017
+                    {/* signOut, may just be temporary for testing -- Sept 2017 */}
                     <TwitterSignIn signOut buttonText={"Twitter Sign Out"} />
                   </View>
                 }
