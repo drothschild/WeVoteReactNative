@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {AppRegistry} from 'react-native';
 
-import App from './src/js/scenes/Main/App'
+import App from './src/js/scenes/Main/AppOld'
 
 class WeVote extends Component{
   render(){

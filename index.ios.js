@@ -1,8 +1,27 @@
+import { AppRegistry } from 'react-native';
+import AppRNRF from './src/js/App/index';
+
+
+/* AppRegistry is the JS entry point to running all React Native apps. App root components should register themselves
+with AppRegistry.registerComponent, then the native system can load the bundle for the app and then actually run the app
+when it's ready by invoking AppRegistry.runApplication. */
+
+AppRegistry.registerComponent('WeVoteReactNative', () => AppRNRF);
+
+
+
+
+
+
+
+
+/*
 import React, {Component} from 'react';
 import {AppRegistry} from 'react-native';
 const MessageQueue = require('MessageQueue');
 
 import App from './src/js/scenes/Main/App'
+
 
 class WeVote extends Component{
   render(){
@@ -13,8 +32,6 @@ class WeVote extends Component{
   }
 }
 
-/* AppRegistry is the JS entry point to running all React Native apps. App root components should register themselves
-with AppRegistry.registerComponent, then the native system can load the bundle for the app and then actually run the app
-when it's ready by invoking AppRegistry.runApplication. */
 
 AppRegistry.registerComponent('WeVoteReactNative', () => App);
+*/
