@@ -1,0 +1,6 @@
+framework module Pods_WeVoteReactNativeTests {
+  umbrella header "Pods-WeVoteReactNativeTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
