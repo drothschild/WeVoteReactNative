@@ -1,25 +1,26 @@
 import React, { Component } from "react";
 import {
-  StyleSheet,
   Switch,
-  ScrollView,
   Text,
   View,
   TouchableOpacity,
   TextInput,
   Dimensions,
-  Platform,
 } from 'react-native';
-import { browserHistory } from "react-router-native";
+import { Actions } from 'react-native-router-flux';
 import LoadingWheel from "../../components/LoadingWheel";
-import TwitterSignIn from "./TwitterSignIn";
+import SocialSignIn from "./SocialSignIn";
 import VoterActions from "../../actions/VoterActions";
-import VoterEmailAddressEntry from "../../components/VoterEmailAddressEntry";
+import VoterConstants from "../../constants/VoterConstants";
 import VoterSessionActions from "../../actions/VoterSessionActions";
 import VoterStore from "../../stores/VoterStore";
-import VoterConstants from "../../constants/VoterConstants";
+import CookieStore from "../../stores/CookieStore";
 import HeaderTitle from "../../components/Header/Header"
-import styles from "../BaseStyles"
+import styles from "../../stylesheets/BaseStyles"
+const logging = require("../../utils/logging");
+
+//import VoterEmailAddressEntry from "../../components/VoterEmailAddressEntry";
+//import { browserHistory } from "react-router-native";
 //import Helmet from "react-helmet";
 //import BrowserPushMessage from "../../components/Widgets/BrowserPushMessage";
 //import FacebookActions from "../../actions/FacebookActions";
@@ -27,8 +28,10 @@ import styles from "../BaseStyles"
 //import FacebookSignIn from "../../components/Facebook/FacebookSignIn";
 //import TwitterActions from "../../actions/TwitterActions";
 
-const debug_mode = false;
+
 const delay_before_user_name_update_api_call = 1200;
+
+
 export default class SignIn extends Component {
 
   constructor (props) {
@@ -43,21 +46,49 @@ export default class SignIn extends Component {
       show_twitter_disconnect: false,
       newsletter_opt_in: VoterStore.getNotificationSettingsFlagState(VoterConstants.NOTIFICATION_NEWSLETTER_OPT_IN),
       notifications_saved_status: "",
+      waiting_for_voter_device_id: true,
+      initialized_voter_device_id: false,  // As of November 2017, This SignIn mounts multiple times
     };
 
     this.handleKeyPress = this.handleKeyPress.bind(this);
     this.updateVoterName = this.updateVoterName.bind(this);
+    this.getInitialDeviceId = this.getInitialDeviceId.bind(this);
   }
 
-  componentDidMount () {
-    //console.log("SignIn componentDidMount");
-    VoterActions.voterRetrieve();
+  static onEnter = () => {
+    logging.rnrfLog("onEnter to SignIn: currentScene = " + Actions.currentScene);
+    Actions.refresh({dummy: 'hello'});  // triggers componentWillReceiveProps
+    // Actions.refs.signIn.forceUpdate();
+  };
+
+  static onExit = () => {
+    logging.rnrfLog("onExit from SignIn: currentScene = " + Actions.currentScene);
+  };
+
+  componentWillReceiveProps(nextProps) {
+    // October 9, 2017: This is hacky, we need a refresh when we come back from the ballot tab, not sure why.
+    if( nextProps.came_from === "ballot") {
+      logging.rnrfLog("componentWillReceiveProps, forcing update : currentScene = " + Actions.currentScene);
+      // Nov 2, 2017, removed, this.forceUpdate();
+    }
+  }
+
+  // Doesn't work in react-native? // componentDidMount () {
+  componentWillMount () {
+    console.log("SignIn ++++ MOUNT");
+
+    // TODO:  November 2017, This assumes that the signin tab is the initial tab, we should move this to a separate
+    //    initialization route that sets up the cookies, we could even go back to Async storage if it would be easier
+    this.setState({waiting_for_voter_device_id: true});
+    this.getInitialDeviceId();
+
     this._onVoterStoreChange();
     //this.facebookListener = FacebookStore.addListener(this._onFacebookChange.bind(this));
     this.voterStoreListener = VoterStore.addListener(this._onVoterStoreChange.bind(this));
   }
 
   componentWillUnmount () {
+    console.log("SignIn ---- UN mount");
     //this.facebookListener.remove();
     this.voterStoreListener.remove();
     this.timer = null;
@@ -68,6 +99,21 @@ export default class SignIn extends Component {
         voter: VoterStore.getVoter(),
         newsletter_opt_in: VoterStore.getNotificationSettingsFlagState(VoterConstants.NOTIFICATION_NEWSLETTER_OPT_IN),
     });
+  }
+
+  getInitialDeviceId () {
+    if (CookieStore.getCurrentVoterDeviceId().length > 0) {
+      this.setState({waiting_for_voter_device_id: false});
+      this.setState({initialized_voter_device_id: true});
+      console.log("SignIn getInitialDeviceId found cached voter_device_id ", CookieStore.getCurrentVoterDeviceId());
+      return;
+    }
+
+    return CookieStore.getItem('voter_device_id').then(function (res) {
+      this.setState({waiting_for_voter_device_id: false});
+      this.setState({initialized_voter_device_id: true});
+      console.log("SignIn getInitialDeviceId voter_device_id attempt prefetch", res);
+    }.bind(this));
   }
 
   /*_onFacebookChange () {
@@ -125,18 +171,6 @@ export default class SignIn extends Component {
     }
   }
 
-
-
-  // getFacebookAuthResponse () {
-  //   return {
-  //     accessToken: FacebookStore.accessToken,
-  //     facebookIsLoggedIn: FacebookStore.loggedIn,
-  //     userId: FacebookStore.userId,
-  //     facebookPictureStatus: FacebookStore.facebookPictureStatus,
-  //     facebookPictureUrl: FacebookStore.facebookPictureUrl
-  //   };
-  // }
-
   updateNewsletterOptIn (value) {
       if (value) {
         VoterActions.voterUpdateNotificationSettingsFlags(VoterConstants.NOTIFICATION_NEWSLETTER_OPT_IN);
@@ -150,19 +184,53 @@ export default class SignIn extends Component {
 
 
   render () {
+    if ( Actions.currentScene !== "signIn") {
+      logging.renderLog("SignIn", "when NOT CURRENT, scene  = " + Actions.currentScene);
+      return null;
+    }
+
+    logging.renderLog("SignIn", "scene = " + Actions.currentScene);
+
+    if(this.state.waiting_for_voter_device_id  && ! this.state.initialized_voter_device_id) {
+      return <View className="ballot">
+        <View className="ballot__header">
+          <Text>Waiting for device initialization</Text>
+          <LoadingWheel/>
+        </View>
+      </View>;
+    }
+
+    if (!VoterStore.isVoterFound ())  {
+      console.log("SignIn.js, voterRetrieve in render()");
+      VoterActions.voterRetrieve();
+    }
+
+    /*10/9/17 Steve, My theory on this react-native-router-flux (RNRF) work around:
+    You can navigate around in the  Stack Container while doing the sign-in Actions, but to go to the other tab (ballot)
+    you need to be in the signIn tab component.  If someone finds a simpler way to do this, please change over to your
+    simpler way */
+
+    const forward = this.props.forward_to_ballot || 'No Data';
+    if( forward === true ) {
+      logging.rnrfLog("SignIn received this.props.forward_to_ballot = " + this.props.forward_to_ballot);
+      logging.rnrfLog("SignIn  Actions.ballot(}");
+      Actions.ballot({came_from: 'signIn'});
+      return <LoadingWheel />;
+    }
+
     if (!this.state.voter){
-        return LoadingWheel;
+      return <LoadingWheel />;
     }
 
     // console.log("SignIn.jsx this.state.facebook_auth_response:", this.state.facebook_auth_response);
     if (!this.state.voter.signed_in_facebook && this.state.facebook_auth_response && this.state.facebook_auth_response.facebook_retrieve_attempted) {
       console.log("SignIn.jsx facebook_retrieve_attempted");
-      browserHistory.push("/facebook_sign_in");
+      // browserHistory.push("/facebook_sign_in");
       // return <Text>SignIn.jsx facebook_retrieve_attempted</Text>;
       return LoadingWheel;
     }
 
-    var {height, width} = Dimensions.get('window');
+    let {width} = Dimensions.get('window');
     let page_title = "Sign In - We Vote";
     let your_account_title = "Your Account";
     let your_account_explanation = "";
@@ -193,9 +261,11 @@ export default class SignIn extends Component {
                 {this.state.voter.signed_in_twitter ?
                   null :
                   <View>
-                    <TwitterSignIn signIn />
-                    {/* signOut, may just be temporary for testing -- Sept 2017 */}
-                    <TwitterSignIn signOut buttonText={"Twitter Sign Out"} />
+                    <SocialSignIn signIn authenticator={'twitter'} />
+                    <SocialSignIn signIn authenticator={'facebook'} />
+                    {/* the two signOuts, may just be temporary for testing -- Oct 2017 */}
+                    <SocialSignIn signOut authenticator={'twitter'} buttonText={"Twitter Sign Out"} />
+                    <SocialSignIn signOut authenticator={'facebook'} buttonText={"Facebook Sign Out"} />
                   </View>
                 }
                 {/*&nbsp;*/}
@@ -277,7 +347,10 @@ export default class SignIn extends Component {
               </View>:
               null
             }
+      {/*
+        // October 3, 2017: Dale says don't need Sign In With Email for now
         <VoterEmailAddressEntry />
+        */}
         </View>
       </View>
     );

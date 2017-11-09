@@ -1,5 +1,6 @@
-import React, { Component, PropTypes } from "react";
+import React, { Component } from "react";
 import { View } from "react-native";
+import PropTypes from 'prop-types';
 import MeasureItemCompressed from "../../components/Ballot/MeasureItemCompressed";
 import OfficeItemCompressed from "../../components/Ballot/OfficeItemCompressed";
 
@@ -24,9 +25,10 @@ export default class BallotItemCompressed extends Component {
 
   render () {
     return <View className="BallotItem card" id={this.props.we_vote_id}>
-        { this.isMeasure() ?
-          <MeasureItemCompressed {...this.props}
-                   link_to_ballot_item_page /> :
+        { this.isMeasure() ? null :
+          // November 1, 2017 -- Temporarily commented out
+          // <MeasureItemCompressed {...this.props}
+          //          link_to_ballot_item_page /> :
           <OfficeItemCompressed {...this.props}
                    link_to_ballot_item_page />
         }

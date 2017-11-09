@@ -1,20 +1,56 @@
-# Uncomment the next line to define a global platform for your project
-# platform :ios, '9.0'
+# Hand coded for WeVoteReactNative, do not casually overwrite me
+# I suspect that the Xcode IDE does not respond to changes made here, and definitely does not show any syntax errors in
+# the Podfile.  Be sure to run 'pod install' from the ios directory in a terminal, after making changes to this file.
+
+platform :ios, '9.0'
+source 'https://github.com/CocoaPods/Specs.git'
+use_frameworks!
+#inherit! :search_paths
 
 target 'WeVoteReactNative' do
-  # Uncomment the next line if you're using Swift or would like to use dynamic frameworks
-  # use_frameworks!
+  pod "Yoga", :path => "../node_modules/react-native/ReactCommon/yoga"
+  pod 'React', :path => '../node_modules/react-native', :subspecs => [
+    'Core',
+    'RCTText',
+    'RCTNetwork',
+    'CxxBridge',
+    'DevSupport',
+    'RCTImage',
+    'RCTLinkingIOS',
+    'RCTAnimation',
+    'RCTWebSocket'
+  ]
+  # React-Native-Oauth dependency
+  pod 'DCTAuth', :git => 'https://github.com/danielctull/DCTAuth.git'
 
-  # Pods for WeVoteReactNative
+  # React-Native dependencies
+  pod 'DoubleConversion', podspec: '../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec'
+  pod 'Folly', podspec: '../node_modules/react-native/third-party-podspecs/Folly.podspec'
+  pod 'GLog', podspec: '../node_modules/react-native/third-party-podspecs/GLog.podspec'
 
-  target 'WeVoteReactNativeTests' do
-    inherit! :search_paths
-    # Pods for testing
-  end
-
+  # Facebook SDK
+  pod 'react-native-fbsdk',      :path => '../node_modules/react-native-fbsdk/ios'
+  pod 'react-native-fbsdkcore',  :path => '../node_modules/react-native-fbsdkcore'
+  pod 'react-native-fbsdklogin', :path => '../node_modules/react-native-fbsdklogin'
+  pod 'react-native-fbsdkshare', :path => '../node_modules/react-native-fbsdkshare'
 end
-source 'https://github.com/CocoaPods/Specs.git'
-platform :ios, '8.0'
-use_frameworks!
 
-pod 'DCTAuth', :git => 'https://github.com/danielctull/DCTAuth.git'
+# target 'WeVoteReactNativeTests' do
+#   pod "Yoga", :path => "../node_modules/react-native/ReactCommon/yoga"
+#   pod 'React', :path => '../node_modules/react-native', :subspecs => [
+#     'Core',
+#     'RCTText',
+#     'RCTNetwork',
+#     'CxxBridge',
+#     'DevSupport',
+#     'RCTImage',
+#     'RCTLinkingIOS',
+#     'RCTWebSocket',
+#     'RCTAnimation'
+#   ]
+#
+#   # React-Native dependencies
+#   pod 'DoubleConversion', podspec: '../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec'
+#   pod 'Folly', podspec: '../node_modules/react-native/third-party-podspecs/Folly.podspec'
+#   pod 'GLog', podspec: '../node_modules/react-native/third-party-podspecs/GLog.podspec'
+# end
